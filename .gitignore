@@ -1,0 +1,28 @@
+# Bytes/Compiled Python
+__pycache__/
+*.pyc
+
+# Virtual Environment
+venv/
+env/
+.venv/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Project Specific - Data & Cache
+cache_data/
+upload_history.json
+options.json
+settings.json
+
+# Security (CRITICAL)
+credentials.json
+
+# IDE / Editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
