@@ -80,7 +80,7 @@ col4.metric("Taxa de Resolução", f"{efficiency:.1f}%")
 st.markdown("###") # Spacer
 
 # --- Professional Charts ---
-col_charts_top1, col_charts_top2 = st.columns([2, 1])
+col_charts_top1, col_charts_top2 = st.columns(2)
 
 with col_charts_top1:
     st.subheader("📅 Ocorrências por Dia")

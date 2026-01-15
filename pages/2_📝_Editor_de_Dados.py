@@ -43,14 +43,15 @@ with st.expander("🔍 Filtros & Pesquisa", expanded=False):
     # Search Bar (Full Width)
     search_term = st.text_input("🔎 Buscar (Nome, etc...)", placeholder="Digite para filtrar...")
     
-    # Filter Columns
-    col_f1, col_f2, col_f3 = st.columns(3)
+    # Filter Columns - Row 1
+    col_f1, col_f2 = st.columns(2)
     with col_f1:
         f_resp = st.multiselect("Responsável", all_responsaveis)
     with col_f2:
-        f_inc = st.multiselect("Inconsistência", all_inconsistencias)
-    with col_f3:
         f_status = st.multiselect("Status", all_status)
+        
+    # Filter Columns - Row 2
+    f_inc = st.multiselect("Inconsistência", all_inconsistencias)
 
 # --- Apply Filters ---
 df_filtered = df.copy()
