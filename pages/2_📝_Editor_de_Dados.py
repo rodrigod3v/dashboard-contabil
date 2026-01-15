@@ -53,6 +53,10 @@ with st.expander("🔍 Filtros & Pesquisa", expanded=False):
     # Filter Columns - Row 2
     f_inc = st.multiselect("Inconsistência", all_inconsistencias)
 
+    st.markdown("---")
+    # Table Height Control
+    rows_to_show = st.slider("📏 Linhas Visíveis (Rolagem)", min_value=5, max_value=100, value=15, step=5, help="Ajuste a altura da tabela de edição.")
+
 # --- Apply Filters ---
 df_filtered = df.copy()
 
@@ -114,7 +118,7 @@ column_cfg = {
     )
 }
 
-# Editor Prep
+
 df_editor_view = df_filtered.copy()
 if 'Quantidade' in df_editor_view.columns:
     df_editor_view['Quantidade'] = df_editor_view['Quantidade'].astype(str)
@@ -126,7 +130,8 @@ edited_df = st.data_editor(
     use_container_width=True,
     column_config=column_cfg,
     num_rows="dynamic",
-    key="editor_main"
+    key="editor_main",
+    height=(rows_to_show * 35) + 38
 )
 
 # --- Save Logic ---
