@@ -35,7 +35,7 @@ with col1:
             st.success(f"✅ Arquivo **{uploaded_file.name}** carregado com sucesso!")
             st.info("👈 Agora navegue para **Dashboard** ou **Editor de Dados** no menu lateral.")
 
-            st.info("👈 Agora navegue para **Dashboard** ou **Editor de Dados** no menu lateral.")
+
 
     # --- Template Download ---
     with st.expander("📝 Precisa de um modelo?"):

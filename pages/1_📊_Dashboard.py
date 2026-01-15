@@ -42,7 +42,11 @@ with st.sidebar:
         )
     
     # Responsible Filter
-    responsaveis = ['Todos'] + sorted(list(df['Responsavel'].unique())) if 'Responsavel' in df.columns else []
+    if 'Responsavel' in df.columns:
+        responsaveis = ['Todos'] + sorted(list(df['Responsavel'].unique()))
+    else:
+        responsaveis = ['Todos']
+        
     selected_resp = st.selectbox("Responsável", responsaveis)
 
 # --- Filtering Logic ---
@@ -56,8 +60,12 @@ if 'Dia' in df.columns and len(date_range) == 2:
         (df_filtered['Dia'].dt.date <= end_date)
     ]
 
+# Ensure 'Quantidade' is numeric
+if 'Quantidade' in df_filtered.columns:
+    df_filtered['Quantidade'] = pd.to_numeric(df_filtered['Quantidade'], errors='coerce').fillna(0)
+    
 # Responsible Filter
-if selected_resp != 'Todos':
+if selected_resp != 'Todos' and 'Responsavel' in df_filtered.columns:
     df_filtered = df_filtered[df_filtered['Responsavel'] == selected_resp]
 
 # --- KPIs ---
@@ -85,60 +93,61 @@ col_charts_top1, col_charts_top2 = st.columns(2)
 with col_charts_top1:
     st.subheader("📅 Ocorrências por Dia")
     if 'Dia' in df_filtered.columns:
-        # Aggregate by day
-        daily_counts = df_filtered.groupby(df_filtered['Dia'].dt.date).size().reset_index(name='Contagem')
-        fig_trend = px.area(daily_counts, x='Dia', y='Contagem', template='plotly_white')
+        # Aggregate by day (Sum Quantity)
+        daily_counts = df_filtered.groupby(df_filtered['Dia'].dt.date)['Quantidade'].sum().reset_index(name='Volume')
+        fig_trend = px.bar(daily_counts, x='Dia', y='Volume', template='plotly_white')
         fig_trend.update_layout(
             margin=dict(l=20, r=20, t=10, b=20),
-            xaxis_title=None,
-            yaxis_title=None,
             height=300
         )
         st.plotly_chart(fig_trend, use_container_width=True)
     else:
-        st.warning("Coluna 'Dia' não encontrada.")
+        st.warning("⚠️ Coluna **'Dia'** não encontrada para exibir este gráfico.")
 
 with col_charts_top2:
     st.subheader("📌 Status Atual")
     if 'Status' in df_filtered.columns:
-        status_counts = df_filtered['Status'].value_counts().reset_index()
-        status_counts.columns = ['Status', 'Count']
+        # Sum by status
+        status_counts = df_filtered.groupby('Status')['Quantidade'].sum().reset_index(name='Volume')
         
-        fig_donut = px.pie(status_counts, values='Count', names='Status', hole=0.6, template='plotly_white')
+        fig_donut = px.pie(status_counts, values='Volume', names='Status', hole=0.6, template='plotly_white')
         fig_donut.update_layout(
             margin=dict(l=0, r=0, t=0, b=0),
             legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5),
             height=300
         )
         st.plotly_chart(fig_donut, use_container_width=True)
+    else:
+        st.warning("⚠️ Coluna **'Status'** não encontrada.")
 
 col_charts_bot1, col_charts_bot2 = st.columns(2)
 
 with col_charts_bot1:
     st.subheader("⚠️ Top Inconsistências")
     if 'Inconsistencias' in df_filtered.columns:
-        inc_counts = df_filtered['Inconsistencias'].value_counts().head(5).reset_index()
-        inc_counts.columns = ['Inconsistencia', 'Contagem']
+        # Sum by Inconsistency
+        inc_counts = df_filtered.groupby('Inconsistencias')['Quantidade'].sum().reset_index(name='Volume')
+        inc_counts = inc_counts.sort_values(by='Volume', ascending=True).tail(5)
         
-        fig_bar = px.bar(inc_counts, y='Inconsistencia', x='Contagem', orientation='h', text='Contagem', template='plotly_white')
+        fig_bar = px.bar(inc_counts, y='Inconsistencias', x='Volume', orientation='h', text='Volume', template='plotly_white')
         fig_bar.update_layout(
-            yaxis=dict(autorange="reversed"),
-            margin=dict(l=0, r=0, t=0, b=0),
-            xaxis_title=None,
-            yaxis_title=None
+            margin=dict(l=0, r=0, t=0, b=0)
         )
         st.plotly_chart(fig_bar, use_container_width=True)
+    else:
+        st.warning("⚠️ Coluna **'Inconsistencias'** não encontrada.")
 
 with col_charts_bot2:
     st.subheader("🏆 Produtividade por Responsável")
     if 'Responsavel' in df_filtered.columns:
-        # Stacked bar by status for each responsible
-        resp_status = df_filtered.groupby(['Responsavel', 'Status']).size().reset_index(name='Contagem')
+        # Stacked bar by status for each responsible (Sum Quantity)
+        resp_status = df_filtered.groupby(['Responsavel', 'Status'])['Quantidade'].sum().reset_index(name='Volume')
         
-        fig_stack = px.bar(resp_status, x='Responsavel', y='Contagem', color='Status', template='plotly_white')
+        fig_stack = px.bar(resp_status, x='Responsavel', y='Volume', color='Status', template='plotly_white')
         fig_stack.update_layout(
             margin=dict(l=0, r=0, t=0, b=0),
-            xaxis_title=None,
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
         )
         st.plotly_chart(fig_stack, use_container_width=True)
+    else:
+        st.warning("⚠️ Coluna **'Responsavel'** não encontrada.")

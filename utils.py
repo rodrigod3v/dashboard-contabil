@@ -82,6 +82,15 @@ def load_data(file_input):
                 df = pd.read_excel(file_input)
         
         # Basic Preprocessing
+        # Normalize column names (remove accents)
+        rename_map = {
+            'Responsável': 'Responsavel',
+            'Inconsistências': 'Inconsistencias',
+            'Situação': 'Status',
+            'Estado': 'Status'
+        }
+        df.rename(columns=rename_map, inplace=True)
+
         if 'Dia' in df.columns:
             df['Dia'] = pd.to_datetime(df['Dia'], errors='coerce')
             
