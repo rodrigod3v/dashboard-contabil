@@ -10,6 +10,13 @@ st.set_page_config(
     layout="wide"
 )
 
+
+from auth import check_password
+
+# --- LOGIN CHECK ---
+if not check_password():
+    st.stop()  # Stop if not logged in
+
 st.title("🏠 Início")
 st.markdown("### Bem-vindo ao Sistema de Controle Contábil")
 

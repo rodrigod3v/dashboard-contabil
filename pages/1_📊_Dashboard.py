@@ -7,6 +7,9 @@ import os
 
 st.set_page_config(page_title="Dashboard Contábil", layout="wide")
 
+from auth import require_login
+require_login()
+
 st.title("📊 Visão Geral da Operação")
 st.markdown("---")
 

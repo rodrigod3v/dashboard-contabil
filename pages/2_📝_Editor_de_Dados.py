@@ -9,6 +9,9 @@ from utils import load_data, load_options, save_options_file, save_settings, loa
 
 st.set_page_config(page_title="Editor de Dados", layout="wide")
 
+from auth import require_login
+require_login()
+
 st.title("📝 Editor de Dados & Correções")
 st.markdown("---")
 

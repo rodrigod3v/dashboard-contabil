@@ -4,6 +4,9 @@ from utils import load_options, save_options_file
 
 st.set_page_config(page_title="Configurações", layout="wide")
 
+from auth import require_login
+require_login()
+
 st.title("⚙️ Gerenciamento de Opções")
 st.markdown("Aqui você pode adicionar ou remover itens das listas suspensas do sistema.")
 st.markdown("---")

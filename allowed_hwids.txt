@@ -1,0 +1,3 @@
+# Adicione os HWIDs permitidos aqui (um por linha)
+# Exemplo: BFEBFBFF000306A9 (Notebook do Rodrigo)
+TESTE-12345

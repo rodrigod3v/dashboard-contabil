@@ -26,3 +26,13 @@ credentials.json
 # OS
 .DS_Store
 Thumbs.db
+
+# Documentation / Local Notes
+doc.txt
+
+# SSH Keys
+*.key
+*.pem
+*.pub
+ssh_key*
+access_keys.txt

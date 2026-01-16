@@ -39,6 +39,11 @@ Visualização de dados analítica e responsiva:
   - Tipos de Inconsistência
 - **Persistência**: As configurações são salvas em `options.json` e carregadas automaticamente.
 
+### 5. 🔐 Sistema de Segurança
+- **Login por Chave de Acesso**: O sistema é protegido contra acesso não autorizado.
+- **Tokens Individuais**: Acesso liberado apenas via chaves geradas pelo administrador.
+- **Gerador de Chaves**: Script administrativo `generate_key.py` para criar novos acessos seguros.
+
 ---
 
 ## 📂 Estrutura do Projeto
