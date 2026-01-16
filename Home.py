@@ -17,12 +17,18 @@ from auth import check_password
 if not check_password():
     st.stop()  # Stop if not logged in
 
+
 st.title("🏠 Início")
 st.markdown("### Bem-vindo ao Sistema de Controle Contábil")
 
 # Initialize Session State
 if 'current_file_path' not in st.session_state:
     st.session_state['current_file_path'] = None
+
+# --- Toast Queue Handler ---
+if 'toast_next_run' in st.session_state and st.session_state['toast_next_run']:
+    st.toast(st.session_state['toast_next_run'], icon="✅")
+    st.session_state['toast_next_run'] = None  # Clear after showing
 
 # --- Main Layout ---
 col1, col2 = st.columns([1, 1], gap="large")
@@ -40,6 +46,9 @@ with col1:
         if saved_path:
             st.session_state['current_file_path'] = saved_path
             st.success(f"✅ Arquivo **{uploaded_file.name}** carregado com sucesso!")
+            
+            # Show toast confirmation
+            st.toast(f"✅ Arquivo Ativo: {uploaded_file.name}", icon="✅")
             st.info("👈 Agora navegue para **Dashboard** ou **Editor de Dados** no menu lateral.")
 
 
@@ -79,23 +88,19 @@ with col2:
                     if os.path.exists(item['path']):
                         st.session_state['current_file_path'] = item['path']
                         st.success("Arquivo selecionado!")
+                        # Clean name for toast
+                        t_name = os.path.basename(item['path'])
+                        if "_" in t_name: t_name = t_name.split("_", 1)[-1]
+                        
+                        # Queue toast for next run
+                        st.session_state['toast_next_run'] = f"Arquivo Ativo: {t_name}"
                         st.rerun()
                     else:
                         st.error("Arquivo não encontrado no cache.")
 
 st.markdown("---")
 
-# --- Current Status Area ---
-# --- Current Status Area ---
-if st.session_state['current_file_path']:
-    current = os.path.basename(st.session_state['current_file_path'])
-    if "_" in current:
-        current = current.split("_", 1)[-1]
-        
-    st.toast(f"✅ Arquivo Ativo: {current}", icon="✅")
 st.markdown("### 💡 Dicas Rápidas")
 st.info("**Editor de Dados:** Você pode corrigir erros diretamente na tabela, sem precisar reupar o arquivo.")
 st.info("**Configurações:** Adicione novos responsáveis ou status personalizados no menu de Configurações.")
 st.info("**Google Sheets:** Integre seu painel com o Google Drive para trabalho colaborativo em tempo real.")
-
-
