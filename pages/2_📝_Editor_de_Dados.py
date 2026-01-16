@@ -122,6 +122,126 @@ column_cfg = {
 }
 
 
+# --- Wizard Logic (Step-by-Step) ---
+if 'wiz_active' not in st.session_state:
+    st.session_state['wiz_active'] = False
+    st.session_state['wiz_step'] = 1
+    st.session_state['wiz_data'] = {}
+
+if not st.session_state['wiz_active']:
+    if st.button("➕ Adicionar Novo Registro (Modo Guiado)", type="primary"):
+        st.session_state['wiz_active'] = True
+        st.session_state['wiz_step'] = 1
+        st.session_state['wiz_data'] = {}
+        st.rerun()
+
+if st.session_state['wiz_active']:
+    with st.container(border=True):
+        step = st.session_state['wiz_step']
+        total_steps = 5
+        st.info(f"📝 **Passo {step} de {total_steps}**")
+        
+        # --- Step 1: Dia ---
+        if step == 1:
+            st.markdown("#### 📅 1. Selecione a Data")
+            w_dia = st.date_input("Data do Ocorrido", value=date.today(), format="DD/MM/YYYY", key="w_dia")
+            
+            col_nav1, col_nav2 = st.columns([1, 5])
+            if col_nav2.button("Próximo ➡️", key="btn_next_1", type="primary"):
+                st.session_state['wiz_data']['Dia'] = w_dia
+                st.session_state['wiz_step'] = 2
+                st.rerun()
+            if col_nav1.button("❌", help="Cancelar", key="btn_can_1"):
+                st.session_state['wiz_active'] = False
+                st.rerun()
+
+        # --- Step 2: Quantidade ---
+        elif step == 2:
+            st.markdown("#### 🔢 2. Digite a Quantidade")
+            st.caption("Máximo 5 dígitos.")
+            w_qtd = st.text_input("Quantidade", value=st.session_state['wiz_data'].get('Quantidade', ''), max_chars=5, key="w_qtd")
+            
+            col_nav1, col_nav2 = st.columns([1, 5])
+            if col_nav2.button("Próximo ➡️", key="btn_next_2", type="primary"):
+                if not w_qtd or not w_qtd.isdigit():
+                    st.error("Digite um número válido.")
+                else:
+                    st.session_state['wiz_data']['Quantidade'] = w_qtd
+                    st.session_state['wiz_step'] = 3
+                    st.rerun()
+            if col_nav1.button("⬅️", help="Voltar", key="btn_back_2"):
+                st.session_state['wiz_step'] = 1
+                st.rerun()
+
+        # --- Step 3: Inconsistencias ---
+        elif step == 3:
+            st.markdown("#### ⚠️ 3. Qual a Inconsistência?")
+            w_inc = st.selectbox("Selecione", all_inconsistencias, index=0, key="w_inc")
+            
+            col_nav1, col_nav2 = st.columns([1, 5])
+            if col_nav2.button("Próximo ➡️", key="btn_next_3", type="primary"):
+                st.session_state['wiz_data']['Inconsistencias'] = w_inc
+                st.session_state['wiz_step'] = 4
+                st.rerun()
+            if col_nav1.button("⬅️", help="Voltar", key="btn_back_3"):
+                st.session_state['wiz_step'] = 2
+                st.rerun()
+
+        # --- Step 4: Status ---
+        elif step == 4:
+            st.markdown("#### 🚦 4. Qual o Status atual?")
+            w_stat = st.selectbox("Selecione", all_status, index=0, key="w_stat")
+            
+            col_nav1, col_nav2 = st.columns([1, 5])
+            if col_nav2.button("Próximo ➡️", key="btn_next_4", type="primary"):
+                st.session_state['wiz_data']['Status'] = w_stat
+                st.session_state['wiz_step'] = 5
+                st.rerun()
+            if col_nav1.button("⬅️", help="Voltar", key="btn_back_4"):
+                st.session_state['wiz_step'] = 3
+                st.rerun()
+
+        # --- Step 5: Responsavel ---
+        elif step == 5:
+            st.markdown("#### 👤 5. Quem é o Responsável?")
+            w_resp = st.selectbox("Selecione", all_responsaveis, index=0, key="w_resp")
+            
+            col_nav1, col_nav2 = st.columns([1, 5])
+            if col_nav2.button("💾 Finalizar e Salvar", key="btn_finish", type="primary"):
+                # Save Logic
+                new_row = st.session_state['wiz_data']
+                new_row['Responsavel'] = w_resp
+                
+                # Create DataFrame for new row
+                df_new = pd.DataFrame([new_row])
+                
+                # Append locally to df
+                # Ensure columns match
+                for col in df.columns:
+                    if col not in df_new.columns:
+                        df_new[col] = None 
+                
+                # Update main DF
+                df = pd.concat([df, df_new], ignore_index=True)
+                
+                # Save to file
+                if file_path.endswith('.csv'):
+                    df.to_csv(file_path, index=False)
+                else:
+                    writer_df = df.copy()
+                    if 'Dia' in writer_df.columns:
+                        writer_df['Dia'] = pd.to_datetime(writer_df['Dia']).dt.date
+                    writer_df.to_excel(file_path, index=False)
+                
+                st.success("✅ Registro adicionado com sucesso!")
+                st.session_state['wiz_active'] = False
+                time.sleep(1)
+                st.rerun()
+
+            if col_nav1.button("⬅️", help="Voltar", key="btn_back_5"):
+                st.session_state['wiz_step'] = 4
+                st.rerun()
+
 df_editor_view = df_filtered.copy()
 if 'Quantidade' in df_editor_view.columns:
     df_editor_view['Quantidade'] = df_editor_view['Quantidade'].astype(str)
@@ -177,7 +297,7 @@ if st.button("💾 Salvar Alterações", type="primary", use_container_width=Tru
 
 # --- Export Section ---
 st.markdown("---")
-st.header("☁️ Integrações & Exportação")
+
 
 col_dl, col_gs = st.columns([1, 1], gap="medium")
 
