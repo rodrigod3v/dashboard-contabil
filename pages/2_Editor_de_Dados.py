@@ -7,13 +7,13 @@ from datetime import date
 from dateutil.relativedelta import relativedelta
 from utils import load_data, load_options, save_options_file, save_settings, load_settings, SETTINGS_FILE
 
-st.set_page_config(page_title="Editor de Dados", layout="wide")
+st.set_page_config(page_title="Gestão de Ocorrências", layout="wide")
 
 from auth import require_login
 require_login()
 
-st.title("Editor de Dados & Correções")
-st.markdown("---")
+st.title("Gestão de Ocorrências")
+
 
 # --- Session Management ---
 if 'current_file_path' not in st.session_state or not st.session_state['current_file_path']:
@@ -41,45 +41,9 @@ all_inconsistencias = sorted(list(set(saved_options.get("inconsistencias", []) +
 all_status = sorted(list(set(saved_options.get("status", ['Pendente', 'Resolvido', 'Em Análise', 'Cancelado']))))
 
 # --- Data Editor Config ---
-# --- Filters ---
-with st.expander("Filtros & Pesquisa", expanded=False):
-    # Search Bar (Full Width)
-    search_term = st.text_input("Buscar (Nome, etc...)", placeholder="Digite para filtrar...")
-    
-    # Filter Columns - Row 1
-    col_f1, col_f2 = st.columns(2)
-    with col_f1:
-        f_resp = st.multiselect("Responsável", all_responsaveis)
-    with col_f2:
-        f_status = st.multiselect("Status", all_status)
-        
-    # Filter Columns - Row 2
-    f_inc = st.multiselect("Inconsistência", all_inconsistencias)
-
-    st.markdown("---")
-    # Table Height Control
-    rows_to_show = st.slider("Linhas Visíveis (Rolagem)", min_value=5, max_value=100, value=15, step=5, help="Ajuste a altura da tabela de edição.")
-    
-bulk_edit_container = st.container()
-
-# --- Apply Filters ---
-df_filtered = df.copy()
-
-# 1. Text Search (Across pertinent columns)
-if search_term:
-    mask = df_filtered.astype(str).apply(lambda x: x.str.contains(search_term, case=False, na=False)).any(axis=1)
-    df_filtered = df_filtered[mask]
-
-# 2. Specific Filters
-if f_resp:
-    if 'Responsavel' in df_filtered.columns:
-        df_filtered = df_filtered[df_filtered['Responsavel'].isin(f_resp)]
-if f_inc:
-    if 'Inconsistencias' in df_filtered.columns:
-        df_filtered = df_filtered[df_filtered['Inconsistencias'].isin(f_inc)]
-if f_status:
-    if 'Status' in df_filtered.columns:
-        df_filtered = df_filtered[df_filtered['Status'].isin(f_status)]
+# --- Layout Containers ---
+table_container = st.container()
+bulk_container = st.container()
 
 # --- Data Editor Config ---
 today = date.today()
@@ -133,7 +97,39 @@ column_cfg = {
 # --- Entry Dialog Logic ---
 # --- Entry Dialog Logic ---
 # --- Entry Dialog Logic ---
-@st.dialog("Adicionar Novos Registros", width="large")
+# --- Filter Logic Helper ---
+def render_filters(df_input):
+    with st.expander("Filtros & Pesquisa", expanded=False):
+        # Search Bar
+        search_term = st.text_input("Buscar (Nome, etc...)", placeholder="Digite para filtrar...")
+        
+        # Filter Columns
+        col_f1, col_f2 = st.columns(2)
+        with col_f1:
+            f_resp = st.multiselect("Responsável", all_responsaveis)
+        with col_f2:
+            f_status = st.multiselect("Status", all_status)
+        f_inc = st.multiselect("Inconsistência", all_inconsistencias)
+
+
+        rows_to_show = st.slider("Linhas Visíveis (Rolagem)", min_value=5, max_value=100, value=15, step=5)
+        
+    # Apply Logic
+    df_out = df_input.copy()
+    if search_term:
+        mask = df_out.astype(str).apply(lambda x: x.str.contains(search_term, case=False, na=False)).any(axis=1)
+        df_out = df_out[mask]
+        
+    if f_resp and 'Responsavel' in df_out.columns:
+        df_out = df_out[df_out['Responsavel'].isin(f_resp)]
+    if f_status and 'Status' in df_out.columns:
+        df_out = df_out[df_out['Status'].isin(f_status)]
+    if f_inc and 'Inconsistencias' in df_out.columns:
+        df_out = df_out[df_out['Inconsistencias'].isin(f_inc)]
+        
+    return df_out, rows_to_show
+
+@st.dialog("Registrar Ocorrência", width="large")
 def entry_form():
     if "pending_entries" not in st.session_state:
         st.session_state["pending_entries"] = []
@@ -191,7 +187,7 @@ def entry_form():
             new_inc = st.selectbox("Inconsistência", all_inconsistencias, index=None, placeholder="Selecione...")
             new_stat = st.selectbox("Status", all_status, index=None, placeholder="Selecione...")
             
-        st.markdown("---")
+
         
         # This button just adds to the list
         added = st.form_submit_button("Adicionar à Fila", type="primary", use_container_width=True)
@@ -199,15 +195,15 @@ def entry_form():
         if added:
             # Validation
             if not new_dia:
-                st.error("A data é obrigatória.")
+                st.toast("A data é obrigatória.", icon="❌")
             elif not new_qtd or not new_qtd.isdigit():
-                st.error("A quantidade deve ser um número válido.")
+                st.toast("A quantidade deve ser um número válido.", icon="❌")
             elif not new_resp:
-                st.error("O responsável é obrigatório.")
+                st.toast("O responsável é obrigatório.", icon="❌")
             elif not new_inc:
-                st.error("A inconsistência é obrigatória.")
+                st.toast("A inconsistência é obrigatória.", icon="❌")
             elif not new_stat:
-                st.error("O status é obrigatório.")
+                st.toast("O status é obrigatório.", icon="❌")
             else:
                 entry = {
                     'Dia': new_dia,
@@ -247,7 +243,7 @@ def entry_form():
             
         if col_actions[1].button("Salvar Todos e Finalizar", type="primary"):
             if edited_buffer.empty:
-                st.warning("A fila está vazia.")
+                st.toast("A fila está vazia.", icon="⚠️")
             else:
                 try:
                     # Sync buffer edits back to logic
@@ -277,141 +273,208 @@ def entry_form():
                     st.rerun()
                     
                 except Exception as e:
-                    st.error(f"Erro ao salvar: {e}")
+                    st.toast(f"Erro ao salvar: {e}", icon="❌")
 
-if st.button("Adicionar Novos Registros", type="primary"):
-    entry_form()
-
-df_editor_view = df_filtered.copy()
-if 'Quantidade' in df_editor_view.columns:
-    df_editor_view['Quantidade'] = df_editor_view['Quantidade'].astype(str)
-if 'Dia' in df_editor_view.columns:
-    df_editor_view['Dia'] = pd.to_datetime(df_editor_view['Dia']).dt.date
-
-# Add Selection Column for Bulk Edit
-df_editor_view.insert(0, "Selecionar", False)
+with table_container:
 
 
-edited_df = st.data_editor(
-    df_editor_view,
-    use_container_width=True,
-    column_config=column_cfg,
-    num_rows="dynamic",
-    key="editor_main",
-    height=(rows_to_show * 35) + 38
-)
+    # --- Toolbar (Mode & Add) ---
+    col_toolbar_1, col_toolbar_2 = st.columns([0.65, 0.35], gap="small")
+    
+    with col_toolbar_1:
+         view_mode = st.radio("Modo de Interação", ["Modo Seleção", "Modo Individual"], horizontal=True, label_visibility="collapsed")
+         
+    with col_toolbar_2:
+         if st.button("➕ Nova Ocorrência", type="primary", use_container_width=True):
+             entry_form()
 
-# --- Save Logic ---
-if st.button("Salvar Alterações", type="primary", use_container_width=True):
-    try:
-        # Prepare processed edited dataframe
-        processed_edited = edited_df.copy()
-        if 'Quantidade' in processed_edited.columns:
-            processed_edited['Quantidade'] = pd.to_numeric(processed_edited['Quantidade'], errors='ignore')
-        if 'Dia' in processed_edited.columns:
-            processed_edited['Dia'] = pd.to_datetime(processed_edited['Dia'])
-            
-        # Update logic:
-        # 1. Update existing rows (intersection of indices)
-        common_indices = processed_edited.index.intersection(df.index)
-        if not common_indices.empty:
-            df.loc[common_indices] = processed_edited.loc[common_indices]
-            
-        # 2. Add new rows (indices in edited but not in original)
-        new_indices = processed_edited.index.difference(df.index)
-        if not new_indices.empty:
-            new_rows = processed_edited.loc[new_indices]
-            df = pd.concat([df, new_rows])
-            
-        # Write to disk (Save DF, not just edited slice)
-        if file_path.endswith('.csv'):
-            df.to_csv(file_path, index=False)
-        else:
-            # For Excel, ensure dates are datetime objects for better compatibility
-            writer_df = df.copy()
-            if 'Dia' in writer_df.columns:
-                writer_df['Dia'] = pd.to_datetime(writer_df['Dia']).dt.date
-            writer_df.to_excel(file_path, index=False)
-            
-        st.success("Dados salvos com sucesso!")
-        time.sleep(1)
-        st.rerun()
-    except Exception as e:
-        st.error(f"Erro ao salvar: {e}")
+    selected_indices = []
 
-# --- Bulk Edit Logic ---
-with bulk_edit_container:
-    with st.expander("Edição em Lote (Selecionados)", expanded=True):
-        # Detect selections
-        selected_indices = edited_df[edited_df['Selecionar'] == True].index
-        num_selected = len(selected_indices)
+    if view_mode == "Modo Seleção":
+        # NATIVE SELECTION MODE
+        st.info("⚠️ **Modo de Edição em Massa:** Selecione as linhas para edição em massa.")
         
-        if num_selected > 0:
-            st.info(f"**{num_selected} linhas selecionadas.** Escolha os campos abaixo e clique em 'Aplicar'.")
+        # Render Filters HERE (Below Balloon)
+        df_filtered, rows_to_show = render_filters(df)
+        
+        # Prepare View
+        df_editor_view = df_filtered.copy()
+        if 'Quantidade' in df_editor_view.columns:
+            df_editor_view['Quantidade'] = df_editor_view['Quantidade'].astype(str)
+        if 'Dia' in df_editor_view.columns:
+            df_editor_view['Dia'] = pd.to_datetime(df_editor_view['Dia']).dt.date
+        
+        # Configure columns for View
+        view_config = column_cfg.copy()
+        if "Selecionar" in view_config: del view_config["Selecionar"] # Remove checkbox config if present
+        
+        event = st.dataframe(
+            df_editor_view,
+            use_container_width=True,
+            column_config=view_config,
+            height=(rows_to_show * 35) + 38,
+            on_select="rerun",
+            selection_mode="multi-row",
+            hide_index=True
+        )
+        
+        if len(event.selection.rows) > 0:
+            selected_indices = df_editor_view.iloc[event.selection.rows].index
             
-            c_bulk_1, c_bulk_2, c_bulk_3 = st.columns(3)
+        edited_df = df_editor_view # For reference in export, though not edited
+
+    else:
+        # CELL EDIT MODE
+        st.warning("⚠️ **Modo de Edição Individual:** Clique no campo para editá-lo.")
+        
+        # Render Filters HERE (Below Balloon)
+        df_filtered, rows_to_show = render_filters(df)
+        
+        # Prepare View
+        df_editor_view = df_filtered.copy()
+        if 'Quantidade' in df_editor_view.columns:
+            df_editor_view['Quantidade'] = df_editor_view['Quantidade'].astype(str)
+        if 'Dia' in df_editor_view.columns:
+            df_editor_view['Dia'] = pd.to_datetime(df_editor_view['Dia']).dt.date
+        
+        # No 'Selecionar' column in this mode
+        
+        edited_df = st.data_editor(
+            df_editor_view,
+            use_container_width=True,
+            column_config=column_cfg,
+            num_rows="dynamic",
+            key="editor_main",
+            height=(rows_to_show * 35) + 38
+        )
+        
+        # No bulk selection in this mode
+        selected_indices = []
+
+    # --- Save Logic (Only needed in Edit Mode) ---
+    # --- Save Logic (Only needed in Individual Mode) ---
+    if view_mode == "Modo Individual":
+        if st.button("💾 Salvar Alterações Manuais", type="primary", use_container_width=True):
+            try:
+                # Prepare processed edited dataframe
+                processed_edited = edited_df.copy()
+                if 'Quantidade' in processed_edited.columns:
+                    processed_edited['Quantidade'] = pd.to_numeric(processed_edited['Quantidade'], errors='ignore')
+                if 'Dia' in processed_edited.columns:
+                    processed_edited['Dia'] = pd.to_datetime(processed_edited['Dia'])
+                    
+                # Update logic:
+                # 1. Update existing rows (intersection of indices)
+                common_indices = processed_edited.index.intersection(df.index)
+                if not common_indices.empty:
+                    df.loc[common_indices] = processed_edited.loc[common_indices]
+                    
+                # 2. Add new rows (indices in edited but not in original)
+                new_indices = processed_edited.index.difference(df.index)
+                if not new_indices.empty:
+                    new_rows = processed_edited.loc[new_indices]
+                    df = pd.concat([df, new_rows])
+                    
+                # Write to disk
+                if file_path.endswith('.csv'):
+                    df.to_csv(file_path, index=False)
+                else:
+                    writer_df = df.copy()
+                    if 'Dia' in writer_df.columns:
+                        writer_df['Dia'] = pd.to_datetime(writer_df['Dia']).dt.date
+                    writer_df.to_excel(file_path, index=False)
+                    
+                st.toast("Dados salvos com sucesso!", icon="✅")
+                time.sleep(1)
+                st.rerun()
+            except Exception as e:
+                st.toast(f"Erro ao salvar: {e}", icon="❌")
+
+# --- Bulk Edit Logic (Works for both modes) ---
+with bulk_container:
+    if view_mode == "Modo Seleção":
+        num_selected = len(selected_indices)
+        bulk_label = f"✏️ Edição em Lote ({num_selected} Selecionados)" if num_selected > 0 else "✏️ Edição em Lote"
+        
+        with st.expander(bulk_label, expanded=(num_selected > 0)):
             
-            with c_bulk_1:
-                use_resp = st.checkbox("Alterar Responsável")
-                val_resp = st.selectbox("Novo Responsável", all_responsaveis, disabled=not use_resp)
+            if num_selected > 0:
+                c_bulk_1, c_bulk_2, c_bulk_3 = st.columns(3)
                 
-            with c_bulk_2:
-                use_stat = st.checkbox("Alterar Status")
-                val_stat = st.selectbox("Novo Status", all_status, disabled=not use_stat)
+                with c_bulk_1:
+                    use_resp = st.checkbox("Alterar Responsável")
+                    val_resp = st.selectbox("Novo Responsável", all_responsaveis, disabled=not use_resp)
+                    
+                with c_bulk_2:
+                    use_stat = st.checkbox("Alterar Status")
+                    val_stat = st.selectbox("Novo Status", all_status, disabled=not use_stat)
+                    
+                with c_bulk_3:
+                    use_inc = st.checkbox("Alterar Inconsistência")
+                    val_inc = st.selectbox("Nova Inconsistência", all_inconsistencias, disabled=not use_inc)
+                    
+                col_b1, col_b2 = st.columns([0.75, 0.25], gap="small")
                 
-            with c_bulk_3:
-                use_inc = st.checkbox("Alterar Inconsistência")
-                val_inc = st.selectbox("Nova Inconsistência", all_inconsistencias, disabled=not use_inc)
-                
-            if st.button(f"Aplicar aos {num_selected} selecionados", type="primary"):
-                try:
-                    # Apply changes to edited_df first (to visual consistency if we wanted, 
-                    # but we will merge directly to main df for safety and then rerun)
-                    
-                    # We need to map the 'selected_indices' relating to 'edited_df' back to the main 'df'.
-                    # Since 'edited_df' is a filtered view, its index should match the original df's index 
-                    # IF we kept the index. Let's verify.
-                    # 'df_editor_view' was a copy of 'df_filtered', which preserved 'df' indices.
-                    # So 'edited_df' indices are valid labels for 'df'.
-                    
-                    # Check for updates
-                    updates_made = False
-                    
-                    if use_resp:
-                        df.loc[selected_indices, 'Responsavel'] = val_resp
-                        updates_made = True
-                    if use_stat:
-                        df.loc[selected_indices, 'Status'] = val_stat
-                        updates_made = True
-                    if use_inc:
-                        df.loc[selected_indices, 'Inconsistencias'] = val_inc
-                        updates_made = True
-                        
-                    if updates_made:
-                        # Save logic (Code Reuse from Save button basically)
-                        if file_path.endswith('.csv'):
-                            df.to_csv(file_path, index=False)
-                        else:
-                            writer_df = df.copy()
-                            if 'Dia' in writer_df.columns:
-                                writer_df['Dia'] = pd.to_datetime(writer_df['Dia']).dt.date
-                            writer_df.to_excel(file_path, index=False)
+                with col_b1:
+                    if st.button(f"Aplicar aos {num_selected} selecionados", type="primary", use_container_width=True):
+                        try:
+                            # Apply changes directly to Main DF based on selected_indices
+                            updates_made = False
                             
-                        st.success(f"{num_selected} registros atualizados com sucesso!")
-                        time.sleep(1)
-                        st.rerun()
-                    else:
-                        st.warning("Nenhum campo selecionado para alteração.")
+                            if use_resp:
+                                df.loc[selected_indices, 'Responsavel'] = val_resp
+                                updates_made = True
+                            if use_stat:
+                                df.loc[selected_indices, 'Status'] = val_stat
+                                updates_made = True
+                            if use_inc:
+                                df.loc[selected_indices, 'Inconsistencias'] = val_inc
+                                updates_made = True
+                                
+                            if updates_made:
+                                # Save logic
+                                if file_path.endswith('.csv'):
+                                    df.to_csv(file_path, index=False)
+                                else:
+                                    writer_df = df.copy()
+                                    if 'Dia' in writer_df.columns:
+                                        writer_df['Dia'] = pd.to_datetime(writer_df['Dia']).dt.date
+                                    writer_df.to_excel(file_path, index=False)
+                                    
+                                st.toast(f"{num_selected} registros atualizados com sucesso!", icon="✅")
+                                time.sleep(1)
+                                st.rerun()
+                            else:
+                                st.toast("Nenhum campo selecionado para alteração.", icon="⚠️")
+                        except Exception as e:
+                             st.toast(f"Erro na edição em lote: {e}", icon="❌")
+
+                with col_b2:
+                    if st.button(f"🗑️ Excluir", type="secondary", use_container_width=True):
+                         try:
+                            df.drop(selected_indices, inplace=True)
+                            
+                            # Save logic
+                            if file_path.endswith('.csv'):
+                                df.to_csv(file_path, index=False)
+                            else:
+                                writer_df = df.copy()
+                                if 'Dia' in writer_df.columns:
+                                    writer_df['Dia'] = pd.to_datetime(writer_df['Dia']).dt.date
+                                writer_df.to_excel(file_path, index=False)
+                            
+                            st.toast(f"{num_selected} registros excluídos!", icon="✅")
+                            time.sleep(1)
+                            st.rerun()
+                         except Exception as e:
+                            st.toast(f"Erro ao excluir: {e}", icon="❌")
                         
-                except Exception as e:
-                    st.error(f"Erro na edição em lote: {e}")
-                    
-        else:
-            st.write("Selecione linhas na coluna **'Selecionar'** da tabela para editar em massa aqui.")
+            else:
+                st.write("Clique nas linhas da tabela acima para selecionar.")
 
 
 # --- Export Section ---
-st.markdown("---")
+
 
 
 col_dl, col_gs = st.columns([1, 1], gap="medium")
@@ -436,7 +499,7 @@ with col_dl:
             use_container_width=True
         )
 
-        st.markdown("---")
+
         st.subheader("Central de Ajuda")
 
         with st.expander("Como Configurar o \"Robô\" do Google (Google Sheets API)"):

@@ -45,7 +45,7 @@ with col1:
         saved_path = save_uploaded_file(uploaded_file)
         if saved_path:
             st.session_state['current_file_path'] = saved_path
-            st.success(f"Arquivo **{uploaded_file.name}** carregado com sucesso!")
+            st.toast(f"Arquivo **{uploaded_file.name}** carregado com sucesso!", icon="✅")
             
             # Show toast confirmation
             st.toast(f"Arquivo Ativo: {uploaded_file.name}", icon=None)
@@ -87,7 +87,7 @@ with col2:
                 if st.button("Abrir", key=f"hist_{item['timestamp']}"):
                     if os.path.exists(item['path']):
                         st.session_state['current_file_path'] = item['path']
-                        st.success("Arquivo selecionado!")
+                        st.toast("Arquivo selecionado!", icon="✅")
                         # Clean name for toast
                         t_name = os.path.basename(item['path'])
                         if "_" in t_name: t_name = t_name.split("_", 1)[-1]
@@ -96,7 +96,7 @@ with col2:
                         st.session_state['toast_next_run'] = f"Arquivo Ativo: {t_name}"
                         st.rerun()
                     else:
-                        st.error("Arquivo não encontrado no cache.")
+                        st.toast("Arquivo não encontrado no cache.", icon="❌")
 
 st.markdown("---")
 

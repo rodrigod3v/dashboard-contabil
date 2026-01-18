@@ -19,7 +19,7 @@ def check_password():
                 allowed_list = [line.strip() for line in f.readlines() if line.strip() and not line.startswith("#")]
             return input_key.strip() in allowed_list
         except FileNotFoundError:
-            st.error("Arquivo de chaves (access_keys.txt) não encontrado.")
+            st.toast("Arquivo de chaves (access_keys.txt) não encontrado.", icon="❌")
             return False
 
     if "password_correct" not in st.session_state:
@@ -30,7 +30,7 @@ def check_password():
     elif not st.session_state["password_correct"]:
         # Password incorrect, show input + error
         show_login_form(password_entered)
-        st.error("Chave de acesso inválida.")
+        st.toast("Chave de acesso inválida.", icon="❌")
         return False
         
     else:
