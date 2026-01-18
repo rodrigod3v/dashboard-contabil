@@ -59,6 +59,8 @@ with st.expander("🔍 Filtros & Pesquisa", expanded=False):
     st.markdown("---")
     # Table Height Control
     rows_to_show = st.slider("📏 Linhas Visíveis (Rolagem)", min_value=5, max_value=100, value=15, step=5, help="Ajuste a altura da tabela de edição.")
+    
+bulk_edit_container = st.container()
 
 # --- Apply Filters ---
 df_filtered = df.copy()
@@ -118,6 +120,12 @@ column_cfg = {
         options=all_responsaveis,
         width="medium",
         required=True
+    ),
+    "Selecionar": st.column_config.CheckboxColumn(
+        "Selecionar",
+        help="Selecione para edição em lote",
+        default=False,
+        width="small"
     )
 }
 
@@ -248,6 +256,10 @@ if 'Quantidade' in df_editor_view.columns:
 if 'Dia' in df_editor_view.columns:
     df_editor_view['Dia'] = pd.to_datetime(df_editor_view['Dia']).dt.date
 
+# Add Selection Column for Bulk Edit
+df_editor_view.insert(0, "Selecionar", False)
+
+
 edited_df = st.data_editor(
     df_editor_view,
     use_container_width=True,
@@ -294,6 +306,77 @@ if st.button("💾 Salvar Alterações", type="primary", use_container_width=Tru
         st.rerun()
     except Exception as e:
         st.error(f"Erro ao salvar: {e}")
+
+# --- Bulk Edit Logic ---
+with bulk_edit_container:
+    with st.expander("✏️ Edição em Lote (Selecionados)", expanded=True):
+        # Detect selections
+        selected_indices = edited_df[edited_df['Selecionar'] == True].index
+        num_selected = len(selected_indices)
+        
+        if num_selected > 0:
+            st.info(f"✅ **{num_selected} linhas selecionadas.** Escolha os campos abaixo e clique em 'Aplicar'.")
+            
+            c_bulk_1, c_bulk_2, c_bulk_3 = st.columns(3)
+            
+            with c_bulk_1:
+                use_resp = st.checkbox("Alterar Responsável")
+                val_resp = st.selectbox("Novo Responsável", all_responsaveis, disabled=not use_resp)
+                
+            with c_bulk_2:
+                use_stat = st.checkbox("Alterar Status")
+                val_stat = st.selectbox("Novo Status", all_status, disabled=not use_stat)
+                
+            with c_bulk_3:
+                use_inc = st.checkbox("Alterar Inconsistência")
+                val_inc = st.selectbox("Nova Inconsistência", all_inconsistencias, disabled=not use_inc)
+                
+            if st.button(f"🚀 Aplicar aos {num_selected} selecionados", type="primary"):
+                try:
+                    # Apply changes to edited_df first (to visual consistency if we wanted, 
+                    # but we will merge directly to main df for safety and then rerun)
+                    
+                    # We need to map the 'selected_indices' relating to 'edited_df' back to the main 'df'.
+                    # Since 'edited_df' is a filtered view, its index should match the original df's index 
+                    # IF we kept the index. Let's verify.
+                    # 'df_editor_view' was a copy of 'df_filtered', which preserved 'df' indices.
+                    # So 'edited_df' indices are valid labels for 'df'.
+                    
+                    # Check for updates
+                    updates_made = False
+                    
+                    if use_resp:
+                        df.loc[selected_indices, 'Responsavel'] = val_resp
+                        updates_made = True
+                    if use_stat:
+                        df.loc[selected_indices, 'Status'] = val_stat
+                        updates_made = True
+                    if use_inc:
+                        df.loc[selected_indices, 'Inconsistencias'] = val_inc
+                        updates_made = True
+                        
+                    if updates_made:
+                        # Save logic (Code Reuse from Save button basically)
+                        if file_path.endswith('.csv'):
+                            df.to_csv(file_path, index=False)
+                        else:
+                            writer_df = df.copy()
+                            if 'Dia' in writer_df.columns:
+                                writer_df['Dia'] = pd.to_datetime(writer_df['Dia']).dt.date
+                            writer_df.to_excel(file_path, index=False)
+                            
+                        st.success(f"✅ {num_selected} registros atualizados com sucesso!")
+                        time.sleep(1)
+                        st.rerun()
+                    else:
+                        st.warning("Nenhum campo selecionado para alteração.")
+                        
+                except Exception as e:
+                    st.error(f"Erro na edição em lote: {e}")
+                    
+        else:
+            st.write("Selecione linhas na coluna **'Selecionar'** da tabela para editar em massa aqui.")
+
 
 # --- Export Section ---
 st.markdown("---")
