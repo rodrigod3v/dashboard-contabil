@@ -6,6 +6,7 @@ import json
 from datetime import date
 from dateutil.relativedelta import relativedelta
 from utils import load_data, load_options, save_options_file, save_settings, load_settings, SETTINGS_FILE
+import styles
 
 st.set_page_config(page_title="Gestão de Ocorrências", layout="wide")
 
@@ -134,43 +135,8 @@ def entry_form():
     if "pending_entries" not in st.session_state:
         st.session_state["pending_entries"] = []
 
-    # --- Custom CSS Injection ---
-    st.markdown("""
-    <style>
-        /* Rounded Inputs */
-        .stTextInput input, .stSelectbox div[data-baseweb="select"] > div, .stDateInput input {
-            border-radius: 12px !important;
-        }
-        
-        /* Buttons Colors */
-        button[kind="primaryFormSubmit"] {
-            border-radius: 20px !important;
-            background-color: #ff4b4b !important; /* Secondary Color for Add to List */
-            border: none !important;
-        }
-        
-        div[data-testid="column"] button[kind="primary"] { 
-            /* Targetting the 'Save All' button outside form */
-            background-color: #6c5ce7 !important; /* Purple for Save All */
-            border-radius: 20px !important;
-        }
-        
-        /* Dark Mode Contrast Improvements */
-        .stMarkdown h3 {
-            color: #e0e0e0 !important;
-        }
-
-        /* HIDE CALENDAR POPUP */
-        div[data-baseweb="calendar"] {
-            display: none !important;
-        }
-        div[data-baseweb="popover"] > div {
-             /* This runs a risk of hiding selectbox popovers if they share structure, 
-                but usually calendar is distinct. 
-                Let's stick to 'calendar' attribute which BaseWeb uses. */
-        }
-    </style>
-    """, unsafe_allow_html=True)
+    # --- Styles ---
+    styles.apply_custom_css()
 
     st.caption("Adicione vários registros e clique em 'Salvar Todos' ao final.")
 
