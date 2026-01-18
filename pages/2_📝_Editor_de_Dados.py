@@ -130,98 +130,81 @@ column_cfg = {
 }
 
 
-# --- Wizard Logic (Step-by-Step) ---
-if 'wiz_active' not in st.session_state:
-    st.session_state['wiz_active'] = False
-    st.session_state['wiz_step'] = 1
-    st.session_state['wiz_data'] = {}
+# --- Entry Dialog Logic ---
+# --- Entry Dialog Logic ---
+@st.dialog("Adicionar Novos Registros", width="large")
+def entry_form():
+    if "pending_entries" not in st.session_state:
+        st.session_state["pending_entries"] = []
 
-if not st.session_state['wiz_active']:
-    if st.button("➕ Adicionar Novo Registro (Modo Guiado)", type="primary"):
-        st.session_state['wiz_active'] = True
-        st.session_state['wiz_step'] = 1
-        st.session_state['wiz_data'] = {}
-        st.rerun()
+    st.caption("Adicione vários registros e clique em 'Salvar Todos' ao final.")
 
-if st.session_state['wiz_active']:
-    with st.container(border=True):
-        step = st.session_state['wiz_step']
-        total_steps = 5
-        st.info(f"📝 **Passo {step} de {total_steps}**")
+    # Form to add to queue (Clear on submit for easy continuous entry)
+    with st.form("new_entry_form", clear_on_submit=True):
+        col1, col2 = st.columns(2)
         
-        # --- Step 1: Dia ---
-        if step == 1:
-            st.markdown("#### 📅 1. Selecione a Data")
-            w_dia = st.date_input("Data do Ocorrido", value=date.today(), format="DD/MM/YYYY", key="w_dia")
+        with col1:
+            # Changed back to date_input as requested
+            new_dia = st.date_input("Data do Ocorrido", value=None, format="DD/MM/YYYY")
+            new_qtd = st.text_input("Quantidade", max_chars=5, help="Máximo 5 dígitos")
+            new_resp = st.selectbox("Responsável", all_responsaveis, index=None, placeholder="Selecione...")
             
-            col_nav1, col_nav2 = st.columns([1, 5])
-            if col_nav2.button("Próximo ➡️", key="btn_next_1", type="primary"):
-                st.session_state['wiz_data']['Dia'] = w_dia
-                st.session_state['wiz_step'] = 2
-                st.rerun()
-            if col_nav1.button("❌", help="Cancelar", key="btn_can_1"):
-                st.session_state['wiz_active'] = False
-                st.rerun()
+        with col2:
+            new_inc = st.selectbox("Inconsistência", all_inconsistencias, index=None, placeholder="Selecione...")
+            new_stat = st.selectbox("Status", all_status, index=None, placeholder="Selecione...")
+            
+        st.markdown("---")
+        
+        # This button just adds to the list
+        added = st.form_submit_button("➕ Adicionar à Lista", type="primary", use_container_width=True)
+        
+        if added:
+            # Validation
+            if not new_dia:
+                st.error("❌ A data é obrigatória.")
+            elif not new_qtd or not new_qtd.isdigit():
+                st.error("❌ A quantidade deve ser um número válido.")
+            elif not new_resp:
+                st.error("❌ O responsável é obrigatório.")
+            elif not new_inc:
+                st.error("❌ A inconsistência é obrigatória.")
+            elif not new_stat:
+                st.error("❌ O status é obrigatório.")
+            else:
+                # Add to session state list
+                entry = {
+                    'Dia': new_dia,
+                    'Quantidade': new_qtd,
+                    'Inconsistencias': new_inc,
+                    'Status': new_stat,
+                    'Responsavel': new_resp
+                }
+                st.session_state["pending_entries"].append(entry)
+                st.success("Adicionado à lista!")
 
-        # --- Step 2: Quantidade ---
-        elif step == 2:
-            st.markdown("#### 🔢 2. Digite a Quantidade")
-            st.caption("Máximo 5 dígitos.")
-            w_qtd = st.text_input("Quantidade", value=st.session_state['wiz_data'].get('Quantidade', ''), max_chars=5, key="w_qtd")
+    # Layout for Pending Items
+    if st.session_state["pending_entries"]:
+        st.markdown("### 📋 Registros na Fila")
+        
+        # Show as dataframe
+        df_pending = pd.DataFrame(st.session_state["pending_entries"])
+        
+        # Format for display
+        df_display = df_pending.copy()
+        if 'Dia' in df_display.columns:
+            df_display['Dia'] = pd.to_datetime(df_display['Dia']).dt.strftime('%d/%m/%Y')
             
-            col_nav1, col_nav2 = st.columns([1, 5])
-            if col_nav2.button("Próximo ➡️", key="btn_next_2", type="primary"):
-                if not w_qtd or not w_qtd.isdigit():
-                    st.error("Digite um número válido.")
-                else:
-                    st.session_state['wiz_data']['Quantidade'] = w_qtd
-                    st.session_state['wiz_step'] = 3
-                    st.rerun()
-            if col_nav1.button("⬅️", help="Voltar", key="btn_back_2"):
-                st.session_state['wiz_step'] = 1
-                st.rerun()
-
-        # --- Step 3: Inconsistencias ---
-        elif step == 3:
-            st.markdown("#### ⚠️ 3. Qual a Inconsistência?")
-            w_inc = st.selectbox("Selecione", all_inconsistencias, index=0, key="w_inc")
+        st.dataframe(df_display, use_container_width=True, hide_index=True)
+        
+        col_actions = st.columns([1, 1])
+        if col_actions[0].button("🗑️ Limpar Lista"):
+            st.session_state["pending_entries"] = []
+            st.rerun()
             
-            col_nav1, col_nav2 = st.columns([1, 5])
-            if col_nav2.button("Próximo ➡️", key="btn_next_3", type="primary"):
-                st.session_state['wiz_data']['Inconsistencias'] = w_inc
-                st.session_state['wiz_step'] = 4
-                st.rerun()
-            if col_nav1.button("⬅️", help="Voltar", key="btn_back_3"):
-                st.session_state['wiz_step'] = 2
-                st.rerun()
-
-        # --- Step 4: Status ---
-        elif step == 4:
-            st.markdown("#### 🚦 4. Qual o Status atual?")
-            w_stat = st.selectbox("Selecione", all_status, index=0, key="w_stat")
-            
-            col_nav1, col_nav2 = st.columns([1, 5])
-            if col_nav2.button("Próximo ➡️", key="btn_next_4", type="primary"):
-                st.session_state['wiz_data']['Status'] = w_stat
-                st.session_state['wiz_step'] = 5
-                st.rerun()
-            if col_nav1.button("⬅️", help="Voltar", key="btn_back_4"):
-                st.session_state['wiz_step'] = 3
-                st.rerun()
-
-        # --- Step 5: Responsavel ---
-        elif step == 5:
-            st.markdown("#### 👤 5. Quem é o Responsável?")
-            w_resp = st.selectbox("Selecione", all_responsaveis, index=0, key="w_resp")
-            
-            col_nav1, col_nav2 = st.columns([1, 5])
-            if col_nav2.button("💾 Finalizar e Salvar", key="btn_finish", type="primary"):
-                # Save Logic
-                new_row = st.session_state['wiz_data']
-                new_row['Responsavel'] = w_resp
-                
-                # Create DataFrame for new row
-                df_new = pd.DataFrame([new_row])
+        if col_actions[1].button("💾 Salvar Todos os Registros", type="primary"):
+            try:
+                # Create DataFrame for new rows
+                df_new = pd.DataFrame(st.session_state["pending_entries"])
                 
                 # Append locally to df
                 # Ensure columns match
@@ -230,25 +213,27 @@ if st.session_state['wiz_active']:
                         df_new[col] = None 
                 
                 # Update main DF
-                df = pd.concat([df, df_new], ignore_index=True)
+                updated_df = pd.concat([df, df_new], ignore_index=True)
                 
                 # Save to file
                 if file_path.endswith('.csv'):
-                    df.to_csv(file_path, index=False)
+                    updated_df.to_csv(file_path, index=False)
                 else:
-                    writer_df = df.copy()
+                    writer_df = updated_df.copy()
                     if 'Dia' in writer_df.columns:
                         writer_df['Dia'] = pd.to_datetime(writer_df['Dia']).dt.date
                     writer_df.to_excel(file_path, index=False)
                 
-                st.success("✅ Registro adicionado com sucesso!")
-                st.session_state['wiz_active'] = False
+                st.success(f"✅ {len(df_new)} registros salvos com sucesso!")
+                st.session_state["pending_entries"] = [] # Clear after save
                 time.sleep(1)
                 st.rerun()
+                
+            except Exception as e:
+                st.error(f"Erro ao salvar: {e}")
 
-            if col_nav1.button("⬅️", help="Voltar", key="btn_back_5"):
-                st.session_state['wiz_step'] = 4
-                st.rerun()
+if st.button("➕ Adicionar Novos Registros", type="primary"):
+    entry_form()
 
 df_editor_view = df_filtered.copy()
 if 'Quantidade' in df_editor_view.columns:
