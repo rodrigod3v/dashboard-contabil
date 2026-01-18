@@ -7,7 +7,7 @@ st.set_page_config(page_title="Configurações", layout="wide")
 from auth import require_login
 require_login()
 
-st.title("⚙️ Gerenciamento de Opções")
+st.title("Gerenciamento de Opções")
 st.markdown("Aqui você pode adicionar ou remover itens das listas suspensas do sistema.")
 st.markdown("---")
 
@@ -23,7 +23,7 @@ def manage_list(title, key, item_name, help_text):
     col1, col2 = st.columns([1, 1], gap="large")
     
     with col1:
-        st.markdown("#### ➕ Adicionar")
+        st.markdown("#### Adicionar")
         new_item = st.text_input(f"Novo {item_name}", key=f"add_{key}")
         if st.button(f"Salvar {item_name}", key=f"btn_add_{key}"):
             if new_item:
@@ -41,7 +41,7 @@ def manage_list(title, key, item_name, help_text):
                 st.error("Digite um nome válido.")
 
     with col2:
-        st.markdown("#### 🗑️ Remover")
+        st.markdown("#### Remover")
         if current_items:
             to_remove = st.selectbox(f"Selecione para remover", ["Selecione..."] + current_items, key=f"rem_{key}")
             if st.button(f"Excluir {item_name}", key=f"btn_rem_{key}", type="primary"):
@@ -62,21 +62,21 @@ def manage_list(title, key, item_name, help_text):
 
 # --- CRUD Sections ---
 manage_list(
-    "👥 Responsáveis", 
+    "Responsáveis", 
     "responsavel", 
     "Responsável", 
     "Nomes dos colaboradores que aparecem no filtro e na edição."
 )
 
 manage_list(
-    "⚠️ Tipos de Inconsistências", 
+    "Tipos de Inconsistências", 
     "inconsistencias", 
     "Inconsistência", 
     "Categorias de erros para classificação."
 )
 
 manage_list(
-    "📌 Status do Processo", 
+    "Status do Processo", 
     "status", 
     "Status", 
     "Etapas do fluxo de trabalho (ex: Pendente, Resolvido)."

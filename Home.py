@@ -6,7 +6,7 @@ from utils import load_history, save_uploaded_file
 
 st.set_page_config(
     page_title="Home - Controle Contábil",
-    page_icon="🏠",
+    page_icon=None,
     layout="wide"
 )
 
@@ -18,7 +18,7 @@ if not check_password():
     st.stop()  # Stop if not logged in
 
 
-st.title("🏠 Início")
+st.title("Início")
 st.markdown("### Bem-vindo ao Sistema de Controle Contábil")
 
 # Initialize Session State
@@ -27,14 +27,14 @@ if 'current_file_path' not in st.session_state:
 
 # --- Toast Queue Handler ---
 if 'toast_next_run' in st.session_state and st.session_state['toast_next_run']:
-    st.toast(st.session_state['toast_next_run'], icon="✅")
+    st.toast(st.session_state['toast_next_run'], icon=None)
     st.session_state['toast_next_run'] = None  # Clear after showing
 
 # --- Main Layout ---
 col1, col2 = st.columns([1, 1], gap="large")
 
 with col1:
-    st.header("📂 Carregar Nova Planilha")
+    st.header("Carregar Nova Planilha")
     uploaded_file = st.file_uploader(
         "Selecione um arquivo Excel ou CSV", 
         type=["xlsx", "csv"],
@@ -45,16 +45,16 @@ with col1:
         saved_path = save_uploaded_file(uploaded_file)
         if saved_path:
             st.session_state['current_file_path'] = saved_path
-            st.success(f"✅ Arquivo **{uploaded_file.name}** carregado com sucesso!")
+            st.success(f"Arquivo **{uploaded_file.name}** carregado com sucesso!")
             
             # Show toast confirmation
-            st.toast(f"✅ Arquivo Ativo: {uploaded_file.name}", icon="✅")
-            st.info("👈 Agora navegue para **Dashboard** ou **Editor de Dados** no menu lateral.")
+            st.toast(f"Arquivo Ativo: {uploaded_file.name}", icon=None)
+            st.info("Agora navegue para **Dashboard** ou **Editor de Dados** no menu lateral.")
 
 
 
     # --- Template Download ---
-    with st.expander("📝 Precisa de um modelo?"):
+    with st.expander("Precisa de um modelo?"):
         st.write("Baixe a planilha padrão para começar:")
         example_data = {
             'Dia': ['2023-10-01'],
@@ -65,10 +65,10 @@ with col1:
         }
         df_example = pd.DataFrame(example_data)
         csv = df_example.to_csv(index=False).encode('utf-8')
-        st.download_button("📥 Baixar Modelo CSV", csv, "modelo_dashboard.csv", "text/csv", use_container_width=True)
+        st.download_button("Baixar Modelo CSV", csv, "modelo_dashboard.csv", "text/csv", use_container_width=True)
 
 with col2:
-    st.header("🕒 Histórico Recente")
+    st.header("Histórico Recente")
     history = load_history()
     
     if not history:
@@ -80,7 +80,7 @@ with col2:
             
             col_h1, col_h2 = st.columns([0.7, 0.3])
             with col_h1:
-                st.text(f"📄 {name}")
+                st.text(f"{name}")
                 st.caption(f"Salvo em: {pd.to_datetime(item['timestamp'], unit='s').strftime('%d/%m/%Y %H:%M')}")
             
             with col_h2:
@@ -100,7 +100,7 @@ with col2:
 
 st.markdown("---")
 
-st.markdown("### 💡 Dicas Rápidas")
+st.markdown("### Dicas Rápidas")
 st.info("**Editor de Dados:** Você pode corrigir erros diretamente na tabela, sem precisar reupar o arquivo.")
 st.info("**Configurações:** Adicione novos responsáveis ou status personalizados no menu de Configurações.")
 st.info("**Google Sheets:** Integre seu painel com o Google Drive para trabalho colaborativo em tempo real.")

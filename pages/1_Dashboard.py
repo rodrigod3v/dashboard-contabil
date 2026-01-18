@@ -10,12 +10,12 @@ st.set_page_config(page_title="Dashboard Contábil", layout="wide")
 from auth import require_login
 require_login()
 
-st.title("📊 Visão Geral da Operação")
+st.title("Visão Geral da Operação")
 st.markdown("---")
 
 # --- Session Management ---
 if 'current_file_path' not in st.session_state or not st.session_state['current_file_path']:
-    st.info("👋 Para começar, faça o upload de uma planilha na **Página Inicial** ou selecione um histórico.")
+    st.info("Para começar, faça o upload de uma planilha na **Página Inicial** ou selecione um histórico.")
     st.stop()
     
 file_path = st.session_state['current_file_path']
@@ -31,7 +31,7 @@ if df is None:
 
 # --- Sidebar Filters ---
 with st.sidebar:
-    st.header("🔍 Filtros de Visualização")
+    st.header("Filtros de Visualização")
     
     # Date Range Filter
     if 'Dia' in df.columns:
@@ -94,7 +94,7 @@ st.markdown("###") # Spacer
 col_charts_top1, col_charts_top2 = st.columns(2)
 
 with col_charts_top1:
-    st.subheader("📅 Ocorrências por Dia")
+    st.subheader("Ocorrências por Dia")
     if 'Dia' in df_filtered.columns:
         # Aggregate by day (Sum Quantity)
         daily_counts = df_filtered.groupby(df_filtered['Dia'].dt.date)['Quantidade'].sum().reset_index(name='Volume')
@@ -105,10 +105,10 @@ with col_charts_top1:
         )
         st.plotly_chart(fig_trend, use_container_width=True)
     else:
-        st.warning("⚠️ Coluna **'Dia'** não encontrada para exibir este gráfico.")
+        st.warning("Coluna **'Dia'** não encontrada para exibir este gráfico.")
 
 with col_charts_top2:
-    st.subheader("📌 Status Atual")
+    st.subheader("Status Atual")
     if 'Status' in df_filtered.columns:
         # Sum by status
         status_counts = df_filtered.groupby('Status')['Quantidade'].sum().reset_index(name='Volume')
@@ -121,12 +121,12 @@ with col_charts_top2:
         )
         st.plotly_chart(fig_donut, use_container_width=True)
     else:
-        st.warning("⚠️ Coluna **'Status'** não encontrada.")
+        st.warning("Coluna **'Status'** não encontrada.")
 
 col_charts_bot1, col_charts_bot2 = st.columns(2)
 
 with col_charts_bot1:
-    st.subheader("⚠️ Top Inconsistências")
+    st.subheader("Top Inconsistências")
     if 'Inconsistencias' in df_filtered.columns:
         # Sum by Inconsistency
         inc_counts = df_filtered.groupby('Inconsistencias')['Quantidade'].sum().reset_index(name='Volume')
@@ -138,10 +138,10 @@ with col_charts_bot1:
         )
         st.plotly_chart(fig_bar, use_container_width=True)
     else:
-        st.warning("⚠️ Coluna **'Inconsistencias'** não encontrada.")
+        st.warning("Coluna **'Inconsistencias'** não encontrada.")
 
 with col_charts_bot2:
-    st.subheader("🏆 Produtividade por Responsável")
+    st.subheader("Produtividade por Responsável")
     if 'Responsavel' in df_filtered.columns:
         # Stacked bar by status for each responsible (Sum Quantity)
         resp_status = df_filtered.groupby(['Responsavel', 'Status'])['Quantidade'].sum().reset_index(name='Volume')
@@ -153,4 +153,4 @@ with col_charts_bot2:
         )
         st.plotly_chart(fig_stack, use_container_width=True)
     else:
-        st.warning("⚠️ Coluna **'Responsavel'** não encontrada.")
+        st.warning("Coluna **'Responsavel'** não encontrada.")

@@ -30,7 +30,7 @@ def check_password():
     elif not st.session_state["password_correct"]:
         # Password incorrect, show input + error
         show_login_form(password_entered)
-        st.error("🚫 Chave de acesso inválida.")
+        st.error("Chave de acesso inválida.")
         return False
         
     else:
@@ -39,7 +39,7 @@ def check_password():
 
 def show_login_form(on_change_callback):
     st.image("https://cdn-icons-png.flaticon.com/512/295/295128.png", width=100)
-    st.title("🔐 Acesso Restrito")
+    st.title("Acesso Restrito")
     st.markdown("Este sistema é protegido. Insira sua **Chave de Acesso** para continuar.")
     
     st.text_input(
@@ -49,7 +49,7 @@ def show_login_form(on_change_callback):
         on_change=on_change_callback,
         help="Solicite sua chave ao administrador."
     )
-    st.info("ℹ️ Se você não tem uma chave, contate o suporte.")
+    st.info("Se você não tem uma chave, contate o suporte.")
 
 def require_login():
     """
