@@ -163,6 +163,16 @@ def entry_form():
         .stMarkdown h3 {
             color: #e0e0e0 !important;
         }
+
+        /* HIDE CALENDAR POPUP */
+        div[data-baseweb="calendar"] {
+            display: none !important;
+        }
+        div[data-baseweb="popover"] > div {
+             /* This runs a risk of hiding selectbox popovers if they share structure, 
+                but usually calendar is distinct. 
+                Let's stick to 'calendar' attribute which BaseWeb uses. */
+        }
     </style>
     """, unsafe_allow_html=True)
 
