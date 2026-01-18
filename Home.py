@@ -29,6 +29,9 @@ st.markdown("### Bem-vindo ao Sistema de Controle Contábil")
 if 'current_file_path' not in st.session_state:
     st.session_state['current_file_path'] = None
 
+# Mark Home as Visited (for F5 redirect logic)
+st.session_state['visited_home'] = True
+
 # --- Toast Queue Handler ---
 if 'toast_next_run' in st.session_state and st.session_state['toast_next_run']:
     st.toast(st.session_state['toast_next_run'], icon=None)

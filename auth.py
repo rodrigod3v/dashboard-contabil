@@ -58,3 +58,7 @@ def require_login():
     """
     if not check_password():
         st.stop()
+        
+    # F5 Redirect Logic: If user hasn't visited Home in this session, redirect them there.
+    if "visited_home" not in st.session_state:
+        st.switch_page("Home.py")
