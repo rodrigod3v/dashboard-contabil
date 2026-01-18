@@ -245,12 +245,12 @@ with table_container:
 
 
     # --- Toolbar (Mode & Add) ---
-    col_toolbar_1, col_toolbar_2 = st.columns([0.65, 0.35], gap="small")
+    col_t1, col_t2 = st.columns([0.7, 0.3], gap="small")
     
-    with col_toolbar_1:
+    with col_t1:
          view_mode = st.radio("Modo de Interação", ["Modo Seleção", "Modo Individual"], horizontal=True, label_visibility="collapsed")
          
-    with col_toolbar_2:
+    with col_t2:
          if st.button("➕ Nova Ocorrência", type="primary", use_container_width=True):
              entry_form()
 

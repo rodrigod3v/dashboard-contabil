@@ -3,6 +3,7 @@ import os
 import pandas as pd
 import time
 from utils import load_history, save_uploaded_file
+import styles
 
 st.set_page_config(
     page_title="Home - Controle Contábil",
@@ -12,6 +13,9 @@ st.set_page_config(
 
 
 from auth import check_password
+
+# Apply Styles
+styles.apply_custom_css()
 
 # --- LOGIN CHECK ---
 if not check_password():

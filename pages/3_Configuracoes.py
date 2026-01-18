@@ -1,8 +1,12 @@
 import streamlit as st
 import time
 from utils import load_options, save_options_file
+import styles
 
 st.set_page_config(page_title="Configurações", layout="wide")
+
+# Apply Styles
+styles.apply_custom_css()
 
 from auth import require_login
 require_login()

@@ -4,8 +4,12 @@ import plotly.express as px
 import plotly.graph_objects as go
 from utils import load_data
 import os
+import styles
 
 st.set_page_config(page_title="Dashboard Contábil", layout="wide")
+
+# Apply Styles
+styles.apply_custom_css()
 
 from auth import require_login
 require_login()
@@ -98,7 +102,7 @@ with col_charts_top1:
     if 'Dia' in df_filtered.columns:
         # Aggregate by day (Sum Quantity)
         daily_counts = df_filtered.groupby(df_filtered['Dia'].dt.date)['Quantidade'].sum().reset_index(name='Volume')
-        fig_trend = px.bar(daily_counts, x='Dia', y='Volume', template='plotly_white')
+        fig_trend = px.bar(daily_counts, x='Dia', y='Volume', template='plotly_dark')
         fig_trend.update_layout(
             margin=dict(l=20, r=20, t=10, b=20),
             height=300
@@ -113,7 +117,7 @@ with col_charts_top2:
         # Sum by status
         status_counts = df_filtered.groupby('Status')['Quantidade'].sum().reset_index(name='Volume')
         
-        fig_donut = px.pie(status_counts, values='Volume', names='Status', hole=0.6, template='plotly_white')
+        fig_donut = px.pie(status_counts, values='Volume', names='Status', hole=0.6, template='plotly_dark')
         fig_donut.update_layout(
             margin=dict(l=0, r=0, t=0, b=0),
             legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5),
@@ -132,7 +136,7 @@ with col_charts_bot1:
         inc_counts = df_filtered.groupby('Inconsistencias')['Quantidade'].sum().reset_index(name='Volume')
         inc_counts = inc_counts.sort_values(by='Volume', ascending=True).tail(5)
         
-        fig_bar = px.bar(inc_counts, y='Inconsistencias', x='Volume', orientation='h', text='Volume', template='plotly_white')
+        fig_bar = px.bar(inc_counts, y='Inconsistencias', x='Volume', orientation='h', text='Volume', template='plotly_dark')
         fig_bar.update_layout(
             margin=dict(l=0, r=0, t=0, b=0)
         )
@@ -146,7 +150,7 @@ with col_charts_bot2:
         # Stacked bar by status for each responsible (Sum Quantity)
         resp_status = df_filtered.groupby(['Responsavel', 'Status'])['Quantidade'].sum().reset_index(name='Volume')
         
-        fig_stack = px.bar(resp_status, x='Responsavel', y='Volume', color='Status', template='plotly_white')
+        fig_stack = px.bar(resp_status, x='Responsavel', y='Volume', color='Status', template='plotly_dark')
         fig_stack.update_layout(
             margin=dict(l=0, r=0, t=0, b=0),
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
