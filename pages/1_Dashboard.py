@@ -5,7 +5,7 @@ from utils import load_data
 import os
 import styles
 
-st.set_page_config(page_title="Dashboard Contábil", layout="wide")
+st.set_page_config(page_title="Dashboard - Controle Contábil", layout="wide")
 
 # Apply Styles
 styles.apply_custom_css()
@@ -14,7 +14,7 @@ from auth import require_login
 require_login()
 
 st.title("Visão Geral da Operação")
-st.markdown("---")
+st.markdown("<p style='color: #64748B; margin-top: -15px;'>Acompanhe os indicadores de performance do seu escritório.</p>", unsafe_allow_html=True)
 
 # --- Session Management ---
 if 'current_file_path' not in st.session_state or not st.session_state['current_file_path']:
@@ -34,7 +34,7 @@ if df is None:
 
 # --- Sidebar Filters ---
 with st.sidebar:
-    st.header("Filtros de Visualização")
+    st.header("Filtros")
     
     # Date Range Filter
     if 'Dia' in df.columns:
@@ -78,6 +78,7 @@ if selected_resp != 'Todos' and 'Responsavel' in df_filtered.columns:
 total_recs = len(df_filtered)
 total_qtd = df_filtered['Quantidade'].sum() if 'Quantidade' in df_filtered.columns and pd.api.types.is_numeric_dtype(df_filtered['Quantidade']) else 0
 pending_count = len(df_filtered[df_filtered['Status'] == 'Pendente']) if 'Status' in df_filtered.columns else 0
+
 # Calculation of resolution %
 if total_recs > 0:
     resolved_count = len(df_filtered[df_filtered['Status'] == 'Resolvido'])
@@ -85,15 +86,44 @@ if total_recs > 0:
 else:
     efficiency = 0
 
+# Custom KPI Card Function
+def kpi_card(title, value, trend=None, color="#0f172a"):
+    """Render a styled KPI card."""
+    trend_html = ""
+    if trend:
+        trend_html = f"<div style='font-size: 0.8rem; color: #10B981; margin-top: 4px;'>{trend}</div>"
+        
+    return f"""
+    <div style="
+        background-color: white; 
+        border: 1px solid #E2E8F0; 
+        border-radius: 12px; 
+        padding: 20px; 
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+        <div style="color: #64748B; font-size: 0.85rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em;">{title}</div>
+        <div style="color: {color}; font-size: 1.8rem; font-weight: 700; margin-top: 8px;">{value}</div>
+        {trend_html}
+    </div>
+    """
+
 col1, col2, col3, col4 = st.columns(4)
-col1.metric("Registros Totais", total_recs)
-col2.metric("Volume (Qtd)", f"{total_qtd:,.0f}")
-col3.metric("Pendências Ativas", pending_count, delta_color="inverse")
-col4.metric("Taxa de Resolução", f"{efficiency:.1f}%")
+
+with col1:
+    st.markdown(kpi_card("Registros Totais", total_recs), unsafe_allow_html=True)
+with col2:
+    st.markdown(kpi_card("Volume (Qtd)", f"{total_qtd:,.0f}"), unsafe_allow_html=True)
+with col3:
+    st.markdown(kpi_card("Pendências Ativas", pending_count, color="#EF4444" if pending_count > 0 else "#10B981"), unsafe_allow_html=True)
+with col4:
+    st.markdown(kpi_card("Taxa de Resolução", f"{efficiency:.1f}%", trend="Eficiência"), unsafe_allow_html=True)
 
 st.markdown("###") # Spacer
 
 # --- Professional Charts ---
+# Chart Color Palette (Teal Based)
+colors_teal = ["#0D9488", "#2DD4BF", "#99F6E4", "#CCFBF1", "#115E59"]
+colors_status = {"Pendente": "#F59E0B", "Resolvido": "#10B981", "Em Andamento": "#3B82F6", "Outros": "#94A3B8"}
+
 col_charts_top1, col_charts_top2 = st.columns(2)
 
 with col_charts_top1:
@@ -101,9 +131,16 @@ with col_charts_top1:
     if 'Dia' in df_filtered.columns:
         # Aggregate by day (Sum Quantity)
         daily_counts = df_filtered.groupby(df_filtered['Dia'].dt.date)['Quantidade'].sum().reset_index(name='Volume')
-        fig_trend = px.bar(daily_counts, x='Dia', y='Volume', template='plotly_dark')
+        
+        fig_trend = px.bar(
+            daily_counts, x='Dia', y='Volume',
+            template='plotly_white',
+            color_discrete_sequence=[colors_teal[0]]
+        )
         fig_trend.update_layout(
-            margin=dict(l=20, r=20, t=10, b=20),
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            margin=dict(l=20, r=20, t=20, b=20),
             height=300
         )
         st.plotly_chart(fig_trend, use_container_width=True)
@@ -116,12 +153,21 @@ with col_charts_top2:
         # Sum by status
         status_counts = df_filtered.groupby('Status')['Quantidade'].sum().reset_index(name='Volume')
         
-        fig_donut = px.pie(status_counts, values='Volume', names='Status', hole=0.6, template='plotly_dark')
+        # Map colors if key exists, else teal
+        fig_donut = px.pie(
+            status_counts, values='Volume', names='Status', hole=0.6,
+            template='plotly_white',
+            color='Status',
+            color_discrete_map=colors_status
+        )
         fig_donut.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
             margin=dict(l=0, r=0, t=0, b=0),
             legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5),
             height=300
         )
+        fig_donut.update_traces(textposition='inside', textinfo='percent+label')
         st.plotly_chart(fig_donut, use_container_width=True)
     else:
         st.warning("Coluna **'Status'** não encontrada.")
@@ -135,9 +181,17 @@ with col_charts_bot1:
         inc_counts = df_filtered.groupby('Inconsistencias')['Quantidade'].sum().reset_index(name='Volume')
         inc_counts = inc_counts.sort_values(by='Volume', ascending=True).tail(5)
         
-        fig_bar = px.bar(inc_counts, y='Inconsistencias', x='Volume', orientation='h', text='Volume', template='plotly_dark')
+        fig_bar = px.bar(
+            inc_counts, y='Inconsistencias', x='Volume', orientation='h', 
+            text='Volume', 
+            template='plotly_white',
+            color_discrete_sequence=[colors_teal[4]]
+        )
         fig_bar.update_layout(
-            margin=dict(l=0, r=0, t=0, b=0)
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            margin=dict(l=0, r=0, t=0, b=0),
+            xaxis_title=None, yaxis_title=None
         )
         st.plotly_chart(fig_bar, use_container_width=True)
     else:
@@ -149,8 +203,14 @@ with col_charts_bot2:
         # Stacked bar by status for each responsible (Sum Quantity)
         resp_status = df_filtered.groupby(['Responsavel', 'Status'])['Quantidade'].sum().reset_index(name='Volume')
         
-        fig_stack = px.bar(resp_status, x='Responsavel', y='Volume', color='Status', template='plotly_dark')
+        fig_stack = px.bar(
+            resp_status, x='Responsavel', y='Volume', color='Status', 
+            template='plotly_white',
+            color_discrete_map=colors_status
+        )
         fig_stack.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
             margin=dict(l=0, r=0, t=0, b=0),
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
         )
